@@ -2,11 +2,13 @@ import asyncio
 import json
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig
 from openai import OpenAI
+from content_filter import extract_scheme_content
+
 
 # Connect to local Ollama (OpenAI-compatible API)
 client = OpenAI(
-    base_url="http://localhost:11434/v1",
-    api_key="ollama"  # required but ignored
+    base_url="http://10.174.207.131:11434/v1",
+    api_key="ollama"
 )
 
 async def main():
@@ -33,8 +35,10 @@ async def main():
             url=target_url,
             config=crawler_config
         )
+        raw_content = result.markdown
+        
+        page_content = extract_scheme_content(raw_content)
 
-        page_content = result.markdown
 
         # Focus on actual scheme section if possible
         if "PM-KISAN Scheme" in page_content:
