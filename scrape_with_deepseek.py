@@ -410,7 +410,7 @@ async def scrape_multiple(urls: list, model: str = "deepseek-r1:7b") -> list:
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 async def main():
-    url = "https://www.myscheme.gov.in/schemes/pmsby"
+    url =  "https://www.myscheme.gov.in/schemes/fesmwpnie"
 
     data = await scrape_scheme(url)
 
