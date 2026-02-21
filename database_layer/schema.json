@@ -1,0 +1,20 @@
+{
+  "scheme_name": "string",
+  "ministry": "string",
+  "description": "string",
+  "benefits": ["string"],
+  "eligibility": {
+    "age": "string",
+    "income": "string",
+    "occupation": "string",
+    "category": "string",
+    "land_required": "string",
+    "other": ["string"]
+  },
+  "documents_required": ["string"],
+  "application_process": ["string"],
+  "official_website": "string",
+  "source_url": "string",
+  "last_checked": "string",
+  "extraction_confidence": "string"
+}
