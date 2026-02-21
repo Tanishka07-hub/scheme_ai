@@ -1,6 +1,6 @@
 import json
-from cleaner import clean_scheme, add_to_database
-from validator import validate_scheme
+from database_layer.cleaner import clean_scheme, add_to_database
+from database_layer.validator import validate_scheme
 
 INPUT_FILE = "gov_schemes_data.json"   # <-- change if your file name is different
 
