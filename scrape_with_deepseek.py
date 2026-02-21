@@ -131,6 +131,9 @@ import re
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from cleaner import clean_scheme, add_to_database
+from validator import validate_scheme
+from datetime import datetime
 
 
 # ── Ollama client ─────────────────────────────────────────────────────────────
@@ -293,6 +296,7 @@ Content:
 
 
 # ── Main scrape function ───────────────────────────────────────────────────────
+# ── Main scrape function ───────────────────────────────────────────────────────
 async def scrape_scheme(url: str, model: str = "deepseek-r1:7b") -> dict:
     browser_config = BrowserConfig(
         headless=True,
@@ -309,56 +313,52 @@ async def scrape_scheme(url: str, model: str = "deepseek-r1:7b") -> dict:
         print("  📡 Phase 1: Loading page...")
         result = await crawler.arun(url=url, config=PHASE1_CONFIG)
 
-        # Unwrap if needed (crawl4ai 0.8.0 quirk)
         if hasattr(result, '_results'):
             result = result._results[0]
 
         phase1_html = result.html
         soup = BeautifulSoup(phase1_html, "html.parser")
 
-        # Get scheme name from <h1> — very reliable
         h1 = soup.find("h1")
         name_hint = h1.get_text(strip=True) if h1 else ""
-        print(f"  📌 Scheme name hint: {name_hint}")
+        print(f"Scheme name hint: {name_hint}")
 
-        # Detect how many tabs exist
         tab_labels = extract_tab_labels(phase1_html)
-        print(f"  🗂  Tabs detected: {tab_labels}")
+        print(f"Tabs detected: {tab_labels}")
 
         sections = {}
 
         if not tab_labels:
-            # No tabs — use full page text with heuristic split
-            print("  ⚠️  No tabs found — using full page content")
+            print("No tabs found — using full page content")
             sections = heuristic_split(
                 clean_text((soup.find("main") or soup.body).get_text(separator="\n"))
             )
         else:
-            # ── Phase 2: Click each tab and collect panel text ────────────────
             for i, label in enumerate(tab_labels):
-                print(f"  🖱  Phase 2 [{i+1}/{len(tab_labels)}]: clicking '{label}'...")
+                print(f"Phase 2 [{i+1}/{len(tab_labels)}]: clicking '{label}'...")
                 try:
                     tab_result = await crawler.arun(
                         url=url,
                         config=make_phase2_config(i)
                     )
+
                     if hasattr(tab_result, '_results'):
                         tab_result = tab_result._results[0]
 
                     panel_text = extract_panel_text(tab_result.html)
                     if panel_text:
                         sections[label] = panel_text
-                        print(f"     ✅ Got {len(panel_text)} chars")
+                        print(f"Got {len(panel_text)} chars")
                     else:
-                        print(f"     ⚠️  Empty panel")
+                        print(f"Empty panel")
                 except Exception as e:
-                    print(f"     ❌ Tab {i} failed: {e}")
+                    print(f"Tab {i} failed: {e}")
 
         if name_hint:
             sections["_name_hint"] = name_hint
 
-        print(f"\n  📄 Sections ready: {[k for k in sections if not k.startswith('_')]}")
-        print("  🤖 Sending to LLM...")
+        print(f"\nSections ready: {[k for k in sections if not k.startswith('_')]}")
+        print("Sending to LLM...")
 
         extracted = extract_with_llm(sections, model=model)
 
@@ -401,9 +401,9 @@ async def scrape_multiple(urls: list, model: str = "deepseek-r1:7b") -> list:
         try:
             data = await scrape_scheme(url, model=model)
             results.append(data)
-            print(f"✅ {data.get('scheme_name', 'Unknown')}")
+            print(f"{data.get('scheme_name', 'Unknown')}")
         except Exception as e:
-            print(f"❌ Failed: {e}")
+            print(f"Failed: {e}")
             results.append({"source_url": url, "error": str(e)})
     return results
 
@@ -415,13 +415,13 @@ async def main():
     data = await scrape_scheme(url)
 
     print("\n" + "=" * 55)
-    print("📋  EXTRACTED SCHEME DATA")
+    print("EXTRACTED SCHEME DATA")
     print("=" * 55)
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
     with open("extracted_schemes.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print("\n💾 Saved → extracted_schemes.json")
+    print("\nSaved → extracted_schemes.json")
 
 
 if __name__ == "__main__":
